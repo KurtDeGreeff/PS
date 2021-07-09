@@ -22,14 +22,11 @@ Get-Member can be used to dump out objects to view them
 3. Out-Default will hand off the object to Out-Host.
 4. Out-Host will interact with the PowerShell formatting engine. 
 
-   a. PowerShell formatting system will look up and resolve the object type to see if there is a *predefined* view associated with that object type. (This is stored in the type table cache)
-   
-   b. IF NOT then the PowerShell formatting system will look to see if there is a user defined view with-in the types.ps1xml and format.ps1xml file (depending on being used within a module or a PowerShell session)
- 
-   c. IF NOT the formatter will check the object next to see if the DefaultDisplayPropertySet is present. If there is no DefaultDisplayPropertySet 
-    NOTE:  For any object in PowerShell, you can access its PSStandardMembers.DefaultDisplayPropertySet property to see the properties that are default for that object, if they are defined
-   
-   d. IF NOT the PowerShell formatting system will do its best to create a format for the output in a table (default option) or list if there are too many properties to display (over 5 everything goes to a list).
+   * PowerShell formatting system will look up and resolve the object type to see if there is a *predefined* view associated with that object type. (This is stored in the type table cache)  
+   * IF NOT then the PowerShell formatting system will look to see if there is a *user defined* view with-in the **types.ps1xml** and **format.ps1xml** file (depending on being used within a module or a PowerShell session)  
+   * IF NOT the formatter will check the object next to see if the *DefaultDisplayPropertySet* is present. If there is no DefaultDisplayPropertySet 
+    NOTE:  For any object in PowerShell, you can access its **PSStandardMembers.DefaultDisplayPropertySet** property to see the properties that are default for that object, if they are defined  
+   * IF NOT the PowerShell formatting system will do its best to create a format for the *output in a table* (default option) or list if there are too many properties to display (over 5 everything goes to a list).
 
 
 ### Extending and formatting objects!
@@ -46,15 +43,13 @@ Get-Member can be used to dump out objects to view them
 
 * MAML is an XML format used for PowerShell Online help
   Microsoft Assistance Markup Language - [MAML](https://en.wikipedia.org/wiki/Microsoft_Assistance_Markup_Language)
-* ELABORATE on this one a little. Types.ps1xml - This file allows you to extend objects with additional properties (aliases, etc.) 
-* Format.ps1xml - You have four different views of each object: Table, List, Wide, Custom.
+* **Types.ps1xml** - This file allows you to extend objects with additional properties (aliases, etc.) 
+* **Format.ps1xml** - You have four different views of each object: Table, List, Wide, Custom.
   The formatting affects only the display output. It doesn't affect which object properties are passed down the pipeline or how they're passed.
 
-WARNING: You never want to update these core files because they are signed and can cause damage. What we can do is use one as a template for our custom object.
-
-IMPORTANT: Beginning with PowerShell 6, this information is compiled into PowerShell and is no longer shipped in a Types.ps1xml file.
-
-Files location: Stored in the following location: Get-ChildItem $PSHome/*type*.ps1xml
+WARNING: You never want to update these core files because they are signed and can cause damage. What we can do is use one as a template for our custom object.  
+**IMPORTANT:** Beginning with PowerShell 6, this information is compiled into PowerShell and is no longer shipped in a Types.ps1xml file.  
+Files location: Stored in the following location: Get-ChildItem $PSHome/*type*.ps1xml  
 
 ### How to extend objects!
 * Add-Member
@@ -62,162 +57,157 @@ Files location: Stored in the following location: Get-ChildItem $PSHome/*type*.p
 * Update-FormatData
 
 
-## Example demos
-
+## Example demos  
 ### Object Types
-* Create a new object with Select-Object
+* Create a new object with Select-Object    
+$process = Get-Process | Where-Object {$_.Handles –gt 50} | Sort-Object handles | Select-Object -First 2  
+$process  
 
-$process = Get-Process | Where-Object {$_.Handles –gt 50} | Sort-Object handles | Select-Object -First 2
-$process
+* TypeName:	System.Diagnostics.Process  
+Clear-Host  
+$process[0] | Get-Member -Force |  
+Where-Object { ($_.MemberType -eq 'Property') -or ($_.MemberType -eq 'Method') -or ($_.MemberType -eq 'Event') } |  
+Group-Object MemberType | Format-Table Name, Count  
 
-* TypeName:	System.Diagnostics.Process
+* In-depth view of the object  
+$process | Get-Member  
 
-Clear-Host
-$process[0] | Get-Member -Force |
-Where-Object { ($_.MemberType -eq 'Property') -or ($_.MemberType -eq 'Method') -or ($_.MemberType -eq 'Event') } |
-Group-Object MemberType | Format-Table Name, Count
+**PowerShell Object Formatting Hierarchy - Both are hidding properties and can be exposed by using the Get-Member with the -Force parameter**
 
-* In-depth view of the object
+Clear-Host  
+$process | Get-Member -Force | Where-Object { ($_.Name -eq 'pstypenames') -or ($_.Name -eq 'PSStandardMembers') }   
 
-$process | Get-Member
-
-### PowerShell Object Formatting Hierarchy - Both are hidding properties and can be exposed by using the Get-Member with the -Force parameter
-
-Clear-Host
-$process | Get-Member -Force | Where-Object { ($_.Name -eq 'pstypenames') -or ($_.Name -eq 'PSStandardMembers') }  
-
-* Defines the Object Type
-
-$process.pstypenames
-https://devblogs.microsoft.com/powershell/psstandardmembers-the-stealth-property/
-$process[0].PSStandardMembers.DefaultDisplayPropertySet
+* Defines the Object Type  
+$process.pstypenames  
+https://devblogs.microsoft.com/powershell/psstandardmembers-the-stealth-property/  
+$process[0].PSStandardMembers.DefaultDisplayPropertySet  
 
 
-### Demo 1
-TIP on collection expansion!
-Invoke-Item $PSHome\en-us\about_Preference_Variables.help.txt
-$FormatEnumerationLimit
-$jobs[1].data | Select-Object -First 5 Name, AddressListMembership | Format-Table
-$FormatEnumerationLimit = 15
-$jobs[1].data | Select-Object -First 5 Name, AddressListMembership | Format-Table
-$FormatEnumerationLimit = 4
+### Demo 1  
+TIP on collection expansion!  
+Invoke-Item $PSHome\en-us\about_Preference_Variables.help.txt  
+$FormatEnumerationLimit  
+$jobs[1].data | Select-Object -First 5 Name, AddressListMembership | Format-Table  
+$FormatEnumerationLimit = 15  
+$jobs[1].data | Select-Object -First 5 Name, AddressListMembership | Format-Table  
+$FormatEnumerationLimit = 4  
 
 
-### Demo 2 - Default-Out and formatting - see above
+### Demo 2 - Default-Out and formatting - see above  
 
-### Demo 3 
-TIP on Select-Object and why not to use it!!! Because it always creates a new object!
-$jobs[1].data
-$selectedData = $jobs[1].data | Select-Object | Where-Object Name -eq blocked
-$selectedData
-Look what happened!!!
-$selectedData.pstypenames
-
-
-### Demo 4
-PowerShell Pipelining and how PowerShell formats objects
-$PSHome = C:\Windows\System32\WindowsPowerShell\v1.0
-Clear-Host
-Get-ChildItem $PSHome/*format*.ps1xml
-Get-ChildItem $PSHome/*type*.ps1xml
+### Demo 3  
+TIP on Select-Object and why not to use it!!! Because it always creates a new object!  
+$jobs[1].data  
+$selectedData = $jobs[1].data | Select-Object | Where-Object Name -eq blocked  
+$selectedData  
+Look what happened!!!  
+$selectedData.pstypenames  
 
 
-### Demo 5
-* file types
-Notepad $PSHome/dotnettypes.format.ps1xml
-Notepad $PSHome/types.ps1xml
-
-* Custom object creation - Need to link to view
-NOTE Custom object creation - Need to link to view
-Clear-Host
-$myCustomObject = [PSCustomObject]@{
-    FirstName = 'PowerShell'
-    LastName  = 'User'
-    Date      = [DateTime]((get-date) -f '%r' -split " ")[0]
-    Time      = ((get-date) -f '%r' -split " ")[1]
-    City      = 'Charlotte'
-    State     = 'NC'
-    Job       = 'PowerShell Programmer'
-    Company   = 'Software Company'
-}
-
-Clear-Host
-$myCustomObject | Get-Member
-$myCustomObject | Get-Member -Force
-$myCustomObject.pstypenames
+### Demo 4  
+PowerShell Pipelining and how PowerShell formats objects  
+$PSHome = C:\Windows\System32\WindowsPowerShell\v1.0  
+Clear-Host  
+Get-ChildItem $PSHome/*format*.ps1xml  
+Get-ChildItem $PSHome/*type*.ps1xml  
 
 
-### Demo 6 
-* Ways to extend object with PSTypeNames
- - Method 1 - Create your [PSCustomObject] with PSTypeName = 'Some Object'
-$myCustomObject1 = [PSCustomObject]@{
-    PSTypeName = 'myCustomObject1'
-}
-$myCustomObject1.pstypenames
+### Demo 5  
+* file types  
+Notepad $PSHome/dotnettypes.format.ps1xml  
+Notepad $PSHome/types.ps1xml  
 
- - Method 2 - Add-Member
-$myCustomObject | Add-member -TypeName myCustomObject
-Clear-Host
-$myCustomObject.pstypenames
-
- - Method 3 - PSTypeNames.Insert
-$myCustomObject3 = [PSCustomObject]@{
-    Name = 'Dave'
-}
-$myCustomObject3.pstypenames.Insert(1, "myCustomObject3")
-Clear-Host
-$myCustomObject3.pstypenames
-
-NOTE: Add the type: Remove the type: $myCustomobject.pstypenames.Remove('myCustomObject')
-Update the property sets to reflect the changes - We will extended the DefaultDisplayProperties
-Clear-Host
-$myCustomObject
-$myCustomObject.pstypenames[0]
-Update-TypeData -TypeName myCustomObject -DefaultDisplayPropertySet FirstName, LastName -DefaultDisplayProperty FirstName -DefaultKeyPropertySet CustomProperties -Force
-$myCustomObject
-$myCustomObject | Get-Member -Force
-
-The data still exists
-Clear-Host
-"First Name: {0}`nLast Name: {1}`nDate: {2}`nTime: {3}`nCity: {4}`nState: {5}`nJob: {6}`nCompany: {7}" -f $myCustomObject.FirstName,
-$myCustomObject.LastName, $myCustomObject.Date, $myCustomObject.Time, $myCustomObject.City,
-$myCustomObject.State, $myCustomObject.Job, $myCustomObject.Company
+* Custom object creation - Need to link to view  
+NOTE Custom object creation - Need to link to view  
+Clear-Host  
+$myCustomObject = [PSCustomObject]@{  
+    FirstName = 'PowerShell'  
+    LastName  = 'User'  
+    Date      = [DateTime]((get-date) -f '%r' -split " ")[0]  
+    Time      = ((get-date) -f '%r' -split " ")[1]  
+    City      = 'Charlotte'  
+    State     = 'NC'  
+    Job       = 'PowerShell Programmer'  
+    Company   = 'Software Company'  
+}  
+  
+Clear-Host  
+$myCustomObject | Get-Member  
+$myCustomObject | Get-Member -Force  
+$myCustomObject.pstypenames  
 
 
-### Demo 7
-* Job format creation
-Notepad 'c:\temp\MyCustomObject.format.ps1xml'
-Update-FormatData -AppendPath 'c:\temp\MyCustomObject.format.ps1xml'
-$myCustomObject
+### Demo 6  
+* Ways to extend object with PSTypeNames  
+ - Method 1 - Create your [PSCustomObject] with PSTypeName = 'Some Object'  
+$myCustomObject1 = [PSCustomObject]@{  
+    PSTypeName = 'myCustomObject1'  
+}  
+$myCustomObject1.pstypenames  
 
-* KEY DIFFERENCE between FT and FL (two views exist now!)
-$myCustomObject | Format-List
-$myCustomObject.PSStandardMembers | Get-Member
+ - Method 2 - Add-Member  
+$myCustomObject | Add-member -TypeName myCustomObject  
+Clear-Host  
+$myCustomObject.pstypenames  
+
+ - Method 3 - PSTypeNames.Insert  
+$myCustomObject3 = [PSCustomObject]@{  
+    Name = 'Dave'  
+}  
+$myCustomObject3.pstypenames.Insert(1, "myCustomObject3")  
+Clear-Host  
+$myCustomObject3.pstypenames  
+
+NOTE: Add the type: Remove the type: $myCustomobject.pstypenames.Remove('myCustomObject')  
+Update the property sets to reflect the changes - We will extended the DefaultDisplayProperties  
+Clear-Host  
+$myCustomObject  
+$myCustomObject.pstypenames[0]  
+Update-TypeData -TypeName myCustomObject -DefaultDisplayPropertySet FirstName, LastName -DefaultDisplayProperty FirstName -DefaultKeyPropertySet CustomProperties -Force  
+$myCustomObject  
+$myCustomObject | Get-Member -Force  
+
+The data still exists  
+Clear-Host  
+"First Name: {0}`nLast Name: {1}`nDate: {2}`nTime: {3}`nCity: {4}`nState: {5}`nJob: {6}`nCompany: {7}" -f $myCustomObject.FirstName,  
+$myCustomObject.LastName, $myCustomObject.Date, $myCustomObject.Time, $myCustomObject.City,  
+$myCustomObject.State, $myCustomObject.Job, $myCustomObject.Company  
 
 
-### Demo 8 
-* Create a new format.ps1xml
-Clear-Host
-Get-TypeData -TypeName *job*
-Get-FormatData -TypeName System.Management.Automation.Job | Export-FormatData -Path c:\temp\jobsxml.ps1xml
+### Demo 7  
+* Job format creation  
+Notepad 'c:\temp\MyCustomObject.format.ps1xml'  
+Update-FormatData -AppendPath 'c:\temp\MyCustomObject.format.ps1xml'  
+$myCustomObject  
 
-* Credit to Bruce Payette for this AWSESOME function!! - Windows PowerShell in Action
-Format-XmlDocument -Path C:\temp\jobsxml.ps1xml -BypassEncodingCheck | clip | Notepad
-
-Demo module formats - how it all works
-Clear-Host
-Get-Job
-Get-JobWithFormat
-
-Clear-Host
-Get-PSSession
-Get-SessionWithFormat
-$ses0 = Get-PSSession -id 1
-$ses0 | Format-List
-$ses1 = Get-SessionWithFormat
-$ses1[0] | Format-List
+* KEY DIFFERENCE between FT and FL (two views exist now!)  
+$myCustomObject | Format-List  
+$myCustomObject.PSStandardMembers | Get-Member  
 
 
+### Demo 8   
+* Create a new format.ps1xml  
+Clear-Host  
+Get-TypeData -TypeName *job*  
+Get-FormatData -TypeName System.Management.Automation.Job | Export-FormatData -Path c:\temp\jobsxml.ps1xml  
+
+* Credit to Bruce Payette for this AWSESOME function!! - Windows PowerShell in Action  
+Format-XmlDocument -Path C:\temp\jobsxml.ps1xml -BypassEncodingCheck | clip | Notepad  
+
+Demo module formats - how it all works  
+Clear-Host  
+Get-Job  
+Get-JobWithFormat  
+
+Clear-Host  
+Get-PSSession  
+Get-SessionWithFormat  
+$ses0 = Get-PSSession -id 1  
+$ses0 | Format-List  
+$ses1 = Get-SessionWithFormat  
+$ses1[0] | Format-List  
+ 
+   
 
 
 
